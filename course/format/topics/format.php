@@ -5,10 +5,10 @@
       // the dates aren't printed - it's just an aesthetic thing for
       // courses that aren't so rigidly defined by time.
       // Included from "view.php"
-      
+      // With Activity Locking code - Search for 'AL CODE'
 
     require_once($CFG->libdir.'/ajax/ajaxlib.php');
-  
+
     $topic = optional_param('topic', -1, PARAM_INT);
 
     // Bounds for block widths
@@ -23,9 +23,9 @@
     define('BLOCK_R_MIN_WIDTH', $rmin);
     define('BLOCK_R_MAX_WIDTH', $rmax);
 
-    $preferred_width_left  = bounded_number(BLOCK_L_MIN_WIDTH, blocks_preferred_width($pageblocks[BLOCK_POS_LEFT]),  
+    $preferred_width_left  = bounded_number(BLOCK_L_MIN_WIDTH, blocks_preferred_width($pageblocks[BLOCK_POS_LEFT]),
                                             BLOCK_L_MAX_WIDTH);
-    $preferred_width_right = bounded_number(BLOCK_R_MIN_WIDTH, blocks_preferred_width($pageblocks[BLOCK_POS_RIGHT]), 
+    $preferred_width_right = bounded_number(BLOCK_R_MIN_WIDTH, blocks_preferred_width($pageblocks[BLOCK_POS_RIGHT]),
                                             BLOCK_R_MAX_WIDTH);
 
     if ($topic != -1) {
@@ -115,7 +115,7 @@
         echo '<tr id="section-0" class="section main">';
         echo '<td class="left side">&nbsp;</td>';
         echo '<td class="content">';
-        
+
         echo '<div class="summary">';
         $summaryformatoptions->noclean = true;
         echo format_text($thissection->summary, FORMAT_HTML, $summaryformatoptions);
@@ -257,6 +257,19 @@
 
             }
 
+			// AL CODE BEGIN
+			///Activity locking///
+			$strlock = get_string('lock', 'lock');
+			$strunlock = get_string('unlock', 'lock');
+
+			echo '<a href="sectionlock.php?id='.$thissection->id.'&amp;sesskey='.$USER->sesskey.'" title="'.$strlock.'">'.
+				 '<img src="'.$CFG->pixpath.'/t/lock.gif" vspace="3" height="11" width="11" border="1" alt="'.$strlock.'" /></a><br />';
+
+			echo '<a href="sectionlock.php?id='.$thissection->id.'&amp;sesskey='.$USER->sesskey.'&action=unlock" title="'.$strunlock.'">'.
+				 '<img src="'.$CFG->pixpath.'/t/unlock.gif" vspace="3" height="11" width="11" border="1" alt="'.$strunlock.'" /></a><br />';
+
+			///	AL CODE END
+
             echo '</td></tr>';
             echo '<tr class="section separator"><td colspan="3" class="spacer"></td></tr>';
         }
@@ -273,6 +286,7 @@
     }
 
     print_container_end();
+
     echo '</td>';
 
             break;
@@ -290,5 +304,5 @@
         }
     }
     echo '</tr></table>';
-    
+
 ?>

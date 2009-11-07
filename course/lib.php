@@ -1,6 +1,6 @@
 <?php  // $Id: lib.php,v 1.538.2.79 2009/09/09 12:45:14 poltawski Exp $
    // Library of useful functions
-
+// With actiVvity locking code - search for "AL CODE"
 
 define('COURSE_MAX_LOG_DISPLAY', 150);          // days
 define('COURSE_MAX_LOGS_PER_PAGE', 1000);       // records
@@ -23,7 +23,7 @@ define('FIRSTUSEDEXCELROW', 3);
 define('MOD_CLASS_ACTIVITY', 0);
 define('MOD_CLASS_RESOURCE', 1);
 
-if (!defined('MAX_MODINFO_CACHE_SIZE')) { 
+if (!defined('MAX_MODINFO_CACHE_SIZE')) {
     define('MAX_MODINFO_CACHE_SIZE', 10);
 }
 
@@ -1155,7 +1155,7 @@ function &get_fast_modinfo(&$course, $userid=0) {
 
         $modcontext = get_context_instance(CONTEXT_MODULE,$cm->id);
 
-        if (!$cm->visible and !has_capability('moodle/course:viewhiddenactivities', 
+        if (!$cm->visible and !has_capability('moodle/course:viewhiddenactivities',
             $modcontext, $userid)) {
             $cm->uservisible = false;
 
@@ -1372,6 +1372,26 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
                      ';
             }
 
+			//AL CODE BEGIN
+			// Activity Locking -- show tracking icons
+			$tracks = iscomplete($mod);
+			if (!isguestuser()) {
+				if ($tracks and $mod->modname != "label") {
+					foreach ($tracks as $track => $state) {
+						if ($state == "open") {
+							echo "<img src=\"$CFG->pixpath/t/open.gif\" alt=\"".
+							get_string("activitycomplete", "lock")."\" title=\"".
+							get_string("activitycomplete", "lock")."\">&nbsp;";
+						} else {
+							echo "<img src=\"$CFG->pixpath/t/closed.gif\" alt=\"".
+							get_string("activitynotcomplete", "lock")."\" title=\"".
+							get_string("activitynotcomplete", "lock")."\">&nbsp;";
+						}
+					}
+				} else print_spacer(12, 15, false, false);
+			}
+			//AL CODE END
+
             if ($mod->indent) {
                 print_spacer(12, 20 * $mod->indent, false);
             }
@@ -1431,10 +1451,57 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
                 }
 
                 $linkcss = $mod->visible ? "" : " class=\"dimmed\" ";
-                echo '<a '.$linkcss.' '.$extra.        // Title unnecessary!
-                     ' href="'.$CFG->wwwroot.'/mod/'.$mod->modname.'/view.php?id='.$mod->id.'">'.
-                     '<img src="'.$icon.'" class="activityicon" alt="" /> <span>'.
-                     $instancename.$altname.'</span></a>';
+
+				//AL CODE BEGIN
+				//Activity Locking--show lock icons
+                $locks = islocked($mod);
+                foreach ( $locks as $lock=>$state ) {
+                    $locked = ($state=='closed'?true:false);
+                }
+                $completion = iscomplete($mod);
+                $incomplete ='';
+                foreach ( $completion as $completion=>$state ) {
+                    $incomplete = ($state=='closed'?true:false);
+                }
+
+                if ( !$incomplete || !$locked ) { // allow link if module is not locked, or if module is completed
+                    echo '<a '.$linkcss.' '.$extra.        // Title unnecessary!
+                         ' href="'.$CFG->wwwroot.'/mod/'.$mod->modname.'/view.php?id='.$mod->id.'">'.
+                         '<img src="'.$icon.'" class="activityicon" alt="" /> <span>'.
+                         $instancename.$altname.'</span></a>';
+                } else {
+                    echo '<a title="Pre-Requisite not complete">' . '<img src="'.$icon.'" class="activityicon" alt="" /> <span style="color:#cccccc;">'.
+                         $instancename.$altname.'</span></a>';
+                }
+
+				$locks = islocked($mod);
+				if (isediting() ) { // !isguestuser() ||
+                    if ($locks and $mod->modname != "label") {
+						if ($mod->checkboxesforprereqs) {
+							foreach ($locks as $lock => $state) {
+								$instance = get_record($mods[$lock]->modname, "id", $mods[$lock]->instance);
+								if ($lock == "time") {
+									if ($state == "closed") {
+										echo "&nbsp;<img src=\"$CFG->pixpath/t/locktime.gif\" height=\"11\" width=\"11\"".
+										" title=\"".get_string("predecessornotcompletetime", "lock").': '.$mod->delay."\"".
+										" alt=\"".get_string("predecessornotcompletetime", "lock").": ".urldecode($mod->modname)."\">";
+									}
+								} else {
+									if ($state == "open") {
+										echo "&nbsp;<img src=\"$CFG->pixpath/t/open.gif\" height=\"11\" width=\"11\"".
+										" title=\"".get_string("predecessorcomplete", "lock").": ".urldecode($instance->name)."\"".
+										" alt=\"".get_string("predecessorcomplete", "lock").": ".urldecode($instance->name)."\">";
+									} else {
+										echo "&nbsp;<img src=\"$CFG->pixpath/t/lock.gif\" height=\"11\" width=\"11\"".
+										" title=\"".get_string("predecessornotcomplete", "lock").": ".urldecode($instance->name)."\"".
+										" alt=\"".get_string("predecessornotcomplete", "lock").": ".urldecode($instance->name)."\">";
+									}
+								}
+							}
+						}
+					}
+                }
+				//AL CODE END
 
                 if (!empty($CFG->enablegroupings) && !empty($mod->groupingid) && has_capability('moodle/course:managegroups', get_context_instance(CONTEXT_COURSE, $course->id))) {
                     if (!isset($groupings)) {
@@ -2705,6 +2772,11 @@ function make_editing_buttons($mod, $absolute=false, $moveselect=true, $indent=-
         $str->groupsnone     = get_string("groupsnone");
         $str->groupsseparate = get_string("groupsseparate");
         $str->groupsvisible  = get_string("groupsvisible");
+//AL CODE BEGIN
+// Activity Locking
+        $str->lock           = get_string("lock","lock");
+        $str->unlock         = get_string("unlock","lock");
+//AL CODE END
         $sesskey = sesskey();
     }
 
@@ -2811,11 +2883,33 @@ function make_editing_buttons($mod, $absolute=false, $moveselect=true, $indent=-
         }
     }
 
+//AL CODE BEGIN
+//Activity Locking -- show lock icons to teachers
+    require_once($CFG->libdir.'/locklib.php');
+	if (islocked($mod) or $mod->delay > "0:0:0") {
+    	$unlock = '<a title="'.$str->unlock.'" href="'.$path.'/lock.php?id='.$mod->id.
+		   		  '&amp;sesskey='.$sesskey.$section.'&action=unlock"><img'.
+           		  ' src="'.$CFG->pixpath.'/t/unlock.gif" class="iconsmall" '.
+           		  ' alt="'.$str->unlock.'" /></a>';
+    } else {
+    	$unlock = '';
+
+	}
+
+//AL CODE END
+
     return '<span class="commands">'."\n".$leftright.$move.
            '<a class="editing_update" title="'.$str->update.'" href="'.$path.'/mod.php?update='.$mod->id.
            '&amp;sesskey='.$sesskey.$section.'"><img'.
            ' src="'.$CFG->pixpath.'/t/edit.gif" class="iconsmall" '.
            ' alt="'.$str->update.'" /></a>'."\n".
+//AL CODE BEGIN
+// Activity Locking
+           '<a title="'.$str->lock.'" href="'.$path.'/lock.php?id='.$mod->id.
+		   '&amp;sesskey='.$sesskey.$section.'"><img'.
+           ' src="'.$CFG->pixpath.'/t/lock.gif" class="iconsmall" '.
+           ' alt="'.$str->lock.'" /></a>'.$unlock.
+//AL CODE END
            '<a class="editing_delete" title="'.$str->delete.'" href="'.$path.'/mod.php?delete='.$mod->id.
            '&amp;sesskey='.$sesskey.$section.'"><img'.
            ' src="'.$CFG->pixpath.'/t/delete.gif" class="iconsmall" '.

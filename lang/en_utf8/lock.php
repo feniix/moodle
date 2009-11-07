@@ -1,0 +1,36 @@
+<?php 
+$string['activitylocking'] = 'Activity Locking';
+$string['activitylocks'] = 'Activity Locks';
+$string['activitycomplete'] = 'Activity complete';
+$string['activitycurrentlylocked'] = 'This activity is currently locked. You must complete the following prerequisites first:';
+$string['afterlockedactivity'] = 'After each locked activity';
+$string['activitynotcomplete'] = 'Activity not complete';
+$string['andhidden'] = 'and hidden';
+$string['beforeeveryactivity'] = 'Before every activity';
+$string['tracking'] = 'Activity Completion';
+$string['checkboxesforprereqs'] = 'Show activity prerequisites';
+$string['completion'] = 'completion';
+$string['locks'] = 'Locks';
+$string['lock'] = 'Lock';
+$string['locksettings'] = 'Lock Settings';
+$string['locked'] = 'locked';
+$string['locking'] = 'locking';
+$string['maxgrade'] = 'Max Grade';
+$string['predecessorcomplete'] = 'Prerequisite complete';
+$string['predecessornotcomplete'] = 'Prerequisite not complete';
+$string['predecessornotcompletetime'] = 'Prerequisite not complete time delay';
+$string['requiredgrade'] = 'Required Grade';
+$string['saveactivitylocks'] = 'Save Activity Locks';
+$string['showactivitytracking'] = 'Show activity locking';
+$string['stylewhencomplete'] = 'CSS style to use when the activity is complete';
+$string['stylewhenlocked'] = 'CSS style to use when the activity is locked';
+$string['timedelay'] = 'Time Delay';
+$string['timedelaylock'] = 'Time Delay Lock';
+$string['timedelayinfo'] = '(The amount of time that a student must be enrolled in the course<br />before they will be able to access this activity.)';
+$string['timedelaynotice'] = 'Amount of time enrolled in course.';
+$string['unlock'] = 'Unlock';
+$string['usermustaccess'] = 'User must access this activity';
+$string['usermustpost'] = 'User must post in this forum';
+$string['usermustanswer'] = 'User must answer this choice';
+$string['visiblewhenlocked'] = 'Visible when locked';
+?>

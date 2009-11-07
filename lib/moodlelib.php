@@ -22,7 +22,7 @@
 //          http://www.gnu.org/copyleft/gpl.html                         //
 //                                                                       //
 ///////////////////////////////////////////////////////////////////////////
-
+// With activity locking code - search for 'AL CODE'
 /**
  * moodlelib.php - Moodle main library
  *
@@ -1989,6 +1989,15 @@ function require_login($courseorid=0, $autologinguest=true, $cm=null, $setwantsu
         }
     }
 
+// AL CODE BEGIN
+
+//Check to see if Activity Locking criteria have been met
+	require_once($CFG->libdir.'/locklib.php');
+	global $cm;
+	check_locks($cm);
+
+// AL CODE END
+
 /// groupmembersonly access control
     if (!empty($CFG->enablegroupings) and $cm and $cm->groupmembersonly and !has_capability('moodle/site:accessallgroups', get_context_instance(CONTEXT_MODULE, $cm->id))) {
         if (isguestuser() or !groups_has_membership($cm)) {
@@ -2191,7 +2200,7 @@ function require_course_login($courseorid, $autologinguest=true, $cm=null, $setw
 
     } else if ((is_object($courseorid) and $courseorid->id == SITEID)
           or (!is_object($courseorid) and $courseorid == SITEID)) {
-              //login for SITE not required
+        //login for SITE not required
         if ($cm and empty($cm->visible)) {
             // hidden activities are not accessible without login
             require_login($courseorid, $autologinguest, $cm, $setwantsurltome);
